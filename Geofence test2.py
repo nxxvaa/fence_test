@@ -1,55 +1,55 @@
-# lat = 30.0444
-# lon = 31.2357
-# alt = 0
+from pymavlink import mavutil
 
-from dronekit import connect, VehicleMode,mavutil
-from pymavlink.dialects.v20 import ardupilotmega as mavlink
-import time
+# Connect to the vehicle
+vehicle = mavutil.mavlink_connection(device="udp:127.0.0.1:14550")
 
-connection_string ='127.0.0.1:14550' #'tcp:127.0.0.1:5760'  #
-print('Connecting to vehicle on: %s' % connection_string)
-# The connect function will return an object of type Vehicle, which is the vehicle here
-vehicle = connect(connection_string, wait_ready=True)
-vehicle.commands.clear()
+# Wait for the heartbeat message to find the system ID
+vehicle.wait_heartbeat()
 
-waypoint1 = (37.4219999, -122.0840575, 0)
-waypoint2 = (38.4219999, -125.0839575, 0)
-waypoint3 = (39.4218999, -124.0839575, 0)
-waypoint4 = (36.4218999, -123.0840575, 0)
+# Create a new mission
+# cmds = vehicle.mav.mission_clear_all_send()
+# cmds = vehicle.mav.mission_count_send(0, 0)
+# cmds = vehicle.mav.mission_item_send(
+    # 0, 0,  # target system, target component
+    # 0,     # sequence
+    # mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+    # mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+    # 0,  # current
+    # 1,  # autocontinue
+    # 0, 0, 0, 0,
+    # -35.363261,
+    # 149.165230,
+    # 20)
 
-cmds = vehicle.commands
-cmds.clear()
+cmds = vehicle.mav.mission_item_send(
+    0, 0,  # target system, target component
+    1,     # sequence
+    mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+    mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
+    0,  # current
+    1,  # autocontinue
+    3,  #Vertex count
+    0,  #Inclusion Group
+    0, 0,
+    -35.362998,
+    149.165327,
+    0)
 
-# vehicle.commands.add(
-#     mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-#     3,
-#     0,
-#     0,
-#     4,
-#     0,
-#     0,
-#     waypoint1[0],
-#     waypoint1[1],
-#     0
-# )
+# cmds = vehicle.mav.mission_item_send(
+    # 0, 0,  # target system, target component
+    # 2,     # sequence
+    # mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+    # mavutil.mavlink.MAV_CMD_NAV_LAND,
+    # 0,   # current
+    # 1,   # autocontinue
+    # 0,   # param1
+    # 0,   # param2
+    # 0,
+    # 0,   # param3
+    # float('nan'),   # param4 - latitude of landing zone (not used)
+    # float('nan'),   # param5 - longitude of landing zone (not used)
+    # float('nan'))   # param6 - altitude of landing zone (not used)
 
-# time.sleep(1)
+vehicle.mav.send(cmds)
 
-cmd = Command( 0,0,0,mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,3,0, 0, 0, waypoint1[0], waypoint1[1], 0)
-# time.sleep(1)
-
-# vehicle.commands.add(
-#     mavlink.MAV_CMD_NAV_FENCE_POINT_INCLUSION,
-#     0,
-#     0,
-#     0,
-#     0,
-#     0,
-#     0,
-#     waypoint3[0],
-#     waypoint3[1],
-#     waypoint3[2],
-#     0    
-# )
-cmds.add(cmd)
-cmds.upload()
+vehicle.close()
