@@ -1,55 +1,26 @@
 from pymavlink import mavutil
+from pymavlink.mavextra import *
+from pymavlink.dialects.v20 import ardupilotmega as mavlink2
 
 # Connect to the vehicle
-vehicle = mavutil.mavlink_connection(device="udp:127.0.0.1:14550")
+connection = mavutil.mavlink_connection(device="udp:127.0.0.1:14550")
 
-# Wait for the heartbeat message to find the system ID
-vehicle.wait_heartbeat()
+# Wait for the connection to be established
+connection.wait_heartbeat()
 
-# Create a new mission
-# cmds = vehicle.mav.mission_clear_all_send()
-# cmds = vehicle.mav.mission_count_send(0, 0)
-# cmds = vehicle.mav.mission_item_send(
-    # 0, 0,  # target system, target component
-    # 0,     # sequence
-    # mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-    # mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-    # 0,  # current
-    # 1,  # autocontinue
-    # 0, 0, 0, 0,
-    # -35.363261,
-    # 149.165230,
-    # 20)
 
-cmds = vehicle.mav.mission_item_send(
-    0, 0,  # target system, target component
-    1,     # sequence
-    mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-    mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION,
-    0,  # current
-    1,  # autocontinue
-    3,  #Vertex count
-    0,  #Inclusion Group
-    0, 0,
-    -35.362998,
-    149.165327,
-    0)
+with open('mission.txt', 'r') as f:
+    mission_items = f.readlines()
 
-# cmds = vehicle.mav.mission_item_send(
-    # 0, 0,  # target system, target component
-    # 2,     # sequence
-    # mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-    # mavutil.mavlink.MAV_CMD_NAV_LAND,
-    # 0,   # current
-    # 1,   # autocontinue
-    # 0,   # param1
-    # 0,   # param2
-    # 0,
-    # 0,   # param3
-    # float('nan'),   # param4 - latitude of landing zone (not used)
-    # float('nan'),   # param5 - longitude of landing zone (not used)
-    # float('nan'))   # param6 - altitude of landing zone (not used)
+# Send the mission items
+for item in mission_items:
+    msg = mavutil.mavlink.MAVLinkMessage(
+        mavutil.mavlink.MAVLINK_MSG_ID_MISSION_ITEM_INT,
+        mavutil.mavlink.MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN,
+        item.encode()
+    )
+    connection.mav.send(msg)
 
-vehicle.mav.send(cmds)
-
-vehicle.close()
+# Request a mission acknowledgement message
+msg = connection.mav.mission_ack_encode(0, 0, mavutil.mavlink.MAV_MISSION_ACCEPTED)
+connection.mav.send(msg)
